@@ -11,7 +11,7 @@ Eine automatisch generierte Liste der derzeit im Repository verfügbaren Pakete 
 
 ## Repository in Pacman hinzufügen
 
-Um dieses Repository in Ihrer `/etc/pacman.conf` zu nutzen, fügen Sie den folgenden Block **am Anfang** der Datei hinzu:
+Um dieses Repository in Ihrer `/etc/pacman.conf` zu nutzen, fügen Sie den folgenden Block **am End**, nach allen anderen Repositories, der Datei hinzu:
 
 > ```bash
 > [archrepo]
