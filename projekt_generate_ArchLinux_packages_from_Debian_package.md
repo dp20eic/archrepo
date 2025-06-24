@@ -1,13 +1,5 @@
 -----
 
-Ausgezeichnet\! Das ist eine super Nachricht, dass der Workflow jetzt funktioniert und die Paketliste erstellt wird. Der Ärger hat sich gelohnt\!
-
-Eine gute und zentral zugängliche Dokumentation ist Gold wert, besonders wenn man in ein paar Tagen oder Wochen wieder daran arbeiten muss. GitHub ist ein hervorragender Ort dafür. `kate` ist als Editor auch eine gute Wahl.
-
-Hier ist die aktualisierte und konsolidierte Dokumentation, bereit, in dein GitHub-Repository (`archrepo`) im Root-Verzeichnis abgelegt zu werden. Ich habe sie in Markdown formatiert, was GitHub nativ sehr gut darstellt.
-
------
-
 # EMQX Broker (Open Source) AUR Paket Dokumentation und Bereitstellung
 
 Dieses Dokument beschreibt den vollständigen Prozess zum Paketieren und Bereitstellen von EMQX Broker (Open Source Edition) für Arch Linux. Es nutzt das offizielle Debian-Binary und hostet das resultierende Pacman-Paket in einem privaten Repository auf GitHub Pages. Dies ist eine effiziente Methode, um EMQX in Umgebungen wie Proxmox LXCs zu nutzen, ohne es selbst kompilieren zu müssen.
@@ -599,23 +591,3 @@ Die automatisch generierte Liste der Pakete ist unter folgender URL verfügbar:
 `https://dp20eic.github.io/archrepo/packages/package_list.txt`
 
 -----
-
-### Was du jetzt tun musst:
-
-1.  **Erstelle die `README.md`-Datei:**
-
-      * Navigiere in das **Root-Verzeichnis** deines lokalen `archrepo` (`~/my-packages/archrepo/`).
-      * Erstelle eine neue Datei namens `README.md` und füge den gesamten Inhalt dieser Dokumentation ein.
-      * Speichere die Datei.
-
-2.  **Committen und Pushen:**
-
-      * ```bash
-          cd ~/my-packages/archrepo/
-          git add README.md
-          git commit -m "Add comprehensive project documentation (README.md)"
-          git push origin main
-        ```
-      * Verwende dein GitHub-Benutzernamen und den **Personal Access Token mit `workflow`-Scope**, wenn gefragt.
-
-Danach wird die gesamte Dokumentation auf der Hauptseite deines GitHub-Repositorys angezeigt. Perfekt für die zukünftige Nachvollziehbarkeit\!
