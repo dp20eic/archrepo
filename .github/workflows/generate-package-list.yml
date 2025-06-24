@@ -1,0 +1,71 @@
+name: Generate Package List
+
+on:
+  push:
+    branches:
+      - main # Führt den Workflow aus, wenn ein Push auf den main-Branch erfolgt
+    paths:
+      - 'packages/*.db.tar.gz' # Nur ausführen, wenn die Datenbankdatei geändert wird
+      - 'packages/*.pkg.tar.zst' # Oder wenn Pakete hinzugefügt/aktualisiert werden
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Arch Linux environment for Pacman
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pacman-mirrorlist
+        # pacman selbst ist kein apt-Paket, aber wir benötigen die Konfiguration für -Sl
+        # WORKAROUND: Installiere pacman-static, das pkginfo enthält, oder ahme es nach
+        # Da GitHub Actions keine Arch-Umgebung ist, müssen wir tricksen:
+        # Statt pacman direkt zu nutzen, extrahieren wir die Informationen mit bsdtar und awk
+        # oder nutzen ein statisch kompiliertes pacman. Für Einfachheit nehmen wir bsdtar.
+        echo "::group::Prepare fake pacman for package list generation"
+        # GitHub Actions (Ubuntu) hat bsdtar, das .tar.gz lesen kann
+        # Wir brauchen nur die 'desc' Dateien aus der Datenbank
+        echo "::endgroup::"
+
+
+    - name: Generate package list
+      working-directory: packages # Führt das Skript im packages-Ordner aus
+      run: |
+        # Alternativer Befehl für die Paketliste, der keine vollständige pacman-Installation erfordert
+        # Liest die Datenbank direkt und extrahiert Namen/Versionen
+        # Findet alle 'desc' Dateien in der Datenbank, extrahiert den 'NAME' und 'VERSION'
+        # Und formatiert sie als "Name Version"
+        tar -xf archrepo.db.tar.gz --wildcards '*/*/desc' --to-stdout | \
+        awk -v RS='\n\n' -v FS='\n' '/^%NAME%/{name=$2} /^%VERSION%/{version=$2} /^%DESC%/{description=$2} END{print ""}{if(name && version) print name " " version " - " description; name=version=description=""}' | sort > package_list.txt
+
+        # Falls der obige bsdtar/awk-Befehl nicht funktioniert, versuche es mit einem statischen pacman
+        # echo "Attempting with static pacman if tar/awk fails..."
+        # chmod +x generate_pkg_list.sh
+        # ./generate_pkg_list.sh # Führt das zuvor erstellte Skript aus
+
+    - name: Upload package list to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3 # Action zum Veröffentlichen auf GitHub Pages
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }} # Benötigt einen speziellen Token
+        publish_dir: ./packages # Veröffentlicht den Inhalt des packages-Ordners
+        # Dieser Schritt fügt die package_list.txt zum gh-pages Branch hinzu
+        # und überschreibt dort alte Versionen.
+        # Da wir aber den 'main' Branch und /packages als Quelle für GitHub Pages nutzen,
+        # stellen wir sicher, dass die Datei im 'packages' Ordner im 'main' Branch landet.
+        # Die 'peaceiris/actions-gh-pages' Action ist hier evtl. nicht ideal,
+        # da sie typischerweise einen gh-pages Branch bedient.
+        # Eine einfachere Methode ist, die Datei direkt in den main Branch zu pushen.
+
+    # Alternativer Schritt, wenn peaceiris/actions-gh-pages nicht passend ist (z.B. wenn kein gh-pages Branch verwendet wird)
+    - name: Push generated package list to main branch
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add packages/package_list.txt # Füge die generierte Datei hinzu
+        git commit -m "Update package list [skip ci]" || echo "No changes to package list."
+        git push origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub's eingebauter Token für Workflows
