@@ -3,27 +3,32 @@ name: Generate Package List
 on:
   push:
     branches:
-      - main # Führt den Workflow aus, wenn ein Push auf den main-Branch erfolgt
+      - main
     paths:
-      - 'packages/*.db.tar.gz' # Nur ausführen, wenn die Datenbankdatei geändert wird
-      - 'packages/*.pkg.tar.zst' # Oder wenn Pakete hinzugefügt/aktualisiert werden
-  workflow_dispatch: {}
+      - 'packages/*.db.tar.gz'
+      - 'packages/*.pkg.tar.zst'
+  workflow_dispatch: {} # Optional, wenn du manuellen Start willst
 
 jobs:
   build:
+    # HIER DEN BERECHTIGUNGSBLOCK HINZUFÜGEN!
+    permissions:
+      contents: write # Dies ist die entscheidende Zeile!
+
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # ... (der Rest des Workflows bleibt gleich) ...
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.x'
 
     - name: Generate package list with Python
-      working-directory: packages # Führt das Skript im packages-Ordner aus
+      working-directory: packages
       run: |
         cat <<EOF > generate_list.py
         import tarfile
@@ -39,19 +44,14 @@ jobs:
 
         try:
             with tarfile.open(db_file, 'r:gz') as tar:
-                # Iteriere durch alle Member im Tar-Archiv
                 for member in tar.getmembers():
-                    # Wir suchen nach Dateien im Format 'paketname-version/desc'
-                    # oder einfach 'paketname/desc'
                     if '/desc' in member.name and not member.isdir():
                         try:
-                            # Extrahiere den Inhalt der 'desc'-Datei
                             desc_content = tar.extractfile(member).read().decode('utf-8')
                             name = ""
                             version = ""
                             description = ""
 
-                            # Parse die Zeilen
                             lines = desc_content.splitlines()
                             for i, line in enumerate(lines):
                                 if line == "%NAME%" and i + 1 < len(lines):
@@ -60,19 +60,19 @@ jobs:
                                     version = lines[i+1]
                                 elif line == "%DESC%" and i + 1 < len(lines):
                                     description = lines[i+1]
-                                if name and version and description: # Sobald wir alles haben
+                                if name and version and description:
                                     break
-                            
+
                             if name and version:
                                 packages.append(f"{name} {version} - {description}")
                         except Exception as e:
                             print(f"Warning: Could not process {member.name}: {e}", file=os.sys.stderr)
-            
-            packages.sort(key=lambda s: s.lower()) # Alphabetisch sortieren
+
+            packages.sort(key=lambda s: s.lower())
             with open(output_file, 'w') as f:
                 for pkg_info in packages:
                     f.write(pkg_info + '\n')
-            
+
             print(f"Package list generated successfully: {output_file}", file=os.sys.stderr)
 
         except Exception as e:
@@ -81,14 +81,14 @@ jobs:
 
         EOF
         python generate_list.py
-        rm generate_list.py # Skript nach Ausführung löschen
-      
+        rm generate_list.py
+
     - name: Push generated package list to main branch
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add packages/package_list.txt # Füge die generierte Datei hinzu
+        git add packages/package_list.txt
         git commit -m "Update package list [skip ci]" || echo "No changes to package list."
         git push origin main
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub's eingebauter Token für Workflows
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
