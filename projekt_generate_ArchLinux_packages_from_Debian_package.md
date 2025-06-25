@@ -1,593 +1,650 @@
 -----
 
-# EMQX Broker (Open Source) AUR Paket Dokumentation und Bereitstellung
-
-Dieses Dokument beschreibt den vollständigen Prozess zum Paketieren und Bereitstellen von EMQX Broker (Open Source Edition) für Arch Linux. Es nutzt das offizielle Debian-Binary und hostet das resultierende Pacman-Paket in einem privaten Repository auf GitHub Pages. Dies ist eine effiziente Methode, um EMQX in Umgebungen wie Proxmox LXCs zu nutzen, ohne es selbst kompilieren zu müssen.
-
-**Repository:** [https://github.com/dp20eic/archrepo](https://www.google.com/url?sa=E&source=gmail&q=https://github.com/dp20eic/archrepo)
+# Arch Linux EMQX Cluster und Uptime Kuma Monitoring - Vollständige Dokumentation
 
 ## Inhaltsverzeichnis
 
-1.  [Übersicht und Vorteile](https://www.google.com/search?q=%231-%C3%BCbersicht-und-vorteile)
-2.  [Projektstruktur](https://www.google.com/search?q=%232-projektstruktur)
-3.  [Das `PKGBUILD` – Die Paketbeschreibung](https://www.google.com/search?q=%233-das-pkgbuild--die-paketbeschreibung)
-4.  [`emqx-broker-debian.install` – Post-Installations-Skript](https://www.google.com/search?q=%234-emqx-broker-debianinstall--post-installations-skript)
-5.  [Vorbereitung: Installation und Paketbau](https://www.google.com/search?q=%235-vorbereitung-installation-und-paketbau)
-6.  [Eigenes Pacman-Repository auf GitHub Pages](https://www.google.com/search?q=%236-eigenes-pacman-repository-auf-github-pages)
-7.  [Pacman im Proxmox LXC konfigurieren](https://www.google.com/search?q=%237-pacman-im-proxmox-lxc-konfigurieren)
-8.  [EMQX-Konfiguration und Cluster-Bildung](https://www.google.com/search?q=%238-emqx-konfiguration-und-cluster-bildung)
-9.  [Monitoring mit Uptime Kuma und WebHooks](https://www.google.com/search?q=%239-monitoring-mit-uptime-kuma-und-webhooks)
-10. [Automatisierte Paketliste mit GitHub Actions](https://www.google.com/search?q=%2310-automatisierte-paketliste-mit-github-actions)
+  * [1. Einleitung](https://www.google.com/search?q=%231-einleitung)
+  * [2. Arch Linux LXC Container auf Proxmox aufsetzen](https://www.google.com/search?q=%232-arch-linux-lxc-container-auf-proxmox-aufsetzen)
+      * [2.1. LXC erstellen](https://www.google.com/search?q=%2321-lxc-erstellen)
+      * [2.2. Installation von Paketen](https://www.google.com/search?q=%2322-installation-von-paketen)
+      * [2.3. LXC vorbereiten](https://www.google.com/search?q=%2323-lxc-vorbereiten)
+  * [3. EMQX Installation](https://www.google.com/search?q=%233-emqx-installation)
+      * [3.1. PKGBUILD erstellen](https://www.google.com/search?q=%2331-pkgbuild-erstellen)
+      * [3.2. Abhängigkeiten installieren](https://www.google.com/search?q=%2332-abh%C3%A4ngigkeiten-installieren)
+      * [3.3. Paket kompilieren und installieren](https://www.google.com/search?q=%2333-paket-kompilieren-und-installieren)
+      * [3.4. Systemd-Dienst starten und aktivieren](https://www.google.com/search?q=%2334-systemd-dienst-starten-und-aktivieren)
+  * [4. EMQX Cluster Konfiguration](https://www.google.com/search?q=%234-emqx-cluster-konfiguration)
+      * [4.1. EMQX Cluster Nodes benennen](https://www.google.com/search?q=%2341-emqx-cluster-nodes-benennen)
+      * [4.2. Erlang Cookie konfigurieren](https://www.google.com/search?q=%2342-erlang-cookie-konfigurieren)
+      * [4.3. EMQX Cluster bilden](https://www.google.com/search?q=%2343-emqx-cluster-bilden)
+  * [5. Let's Encrypt Zertifikate für EMQX](https://www.google.com/search?q=%235-lets-encrypt-zertifikate-f%C3%BCr-emqx)
+      * [5.1. Certbot Installation und Konfiguration](https://www.google.com/search?q=%2351-certbot-installation-und-konfiguration)
+      * [5.2. Zertifikate für EMQX konfigurieren](https://www.google.com/search?q=%2352-zertifikate-f%C3%BCr-emqx-konfigurieren)
+  * [6. EMQX Dashboard und Basic Security](https://www.google.com/search?q=%236-emqx-dashboard-und-basic-security)
+      * [6.1. Dashboard Zugang](https://www.google.com/search?q=%2361-dashboard-zugang)
+      * [6.2. Standard-Benutzer und Passwörter ändern](https://www.google.com/search?q=%2362-standard-benutzer-und-passw%C3%B6rter-%C3%A4ndern)
+  * [7. Firewall-Konfiguration (ufw)](https://www.google.com/search?q=%237-firewall-konfiguration-ufw)
+      * [7.1. UFW installieren und konfigurieren](https://www.google.com/search?q=%2371-ufw-installieren-und-konfigurieren)
+      * [7.2. Erforderliche Ports öffnen](https://www.google.com/search?q=%2372-erforderliche-ports-%C3%B6ffnen)
+  * [8. GitHub Actions Integration (Automatischer Paket-Push)](https://www.google.com/search?q=%238-github-actions-integration-automatischer-paket-push)
+      * [8.1. SSH-Schlüsselpaar generieren](https://www.google.com/search?q=%2381-ssh-schl%C3%BCsselpaar-generieren)
+      * [8.2. GitHub Secrets konfigurieren](https://www.google.com/search?q=%2382-github-secrets-konfigurieren)
+      * [8.3. GitHub Actions Workflow einrichten](https://www.google.com/search?q=%2383-github-actions-workflow-einrichten)
+      * [8.4. Arch Linux Repository aufsetzen](https://www.google.com/search?q=%2384-arch-linux-repository-aufsetzen)
+  * [9. Uptime Kuma Installation und Monitoring (Basis)](https://www.google.com/search?q=%239-uptime-kuma-installation-und-monitoring-basis)
+      * [9.1. Uptime Kuma Installation (Docker)](https://www.google.com/search?q=%2391-uptime-kuma-installation-docker)
+      * [9.2. Einfaches HTTP(s) Monitoring](https://www.google.com/search?q=%2392-einfaches-https-monitoring)
+  * [10. EMQX Cluster Überwachung mit Uptime Kuma (Heartbeat)](https://www.google.com/search?q=%2310-emqx-cluster-%C3%BCberwachung-mit-uptime-kuma-heartbeat)
+      * [10.1. Uptime Kuma: Push Monitor einrichten](https://www.google.com/search?q=%23101-uptime-kuma-push-monitor-einrichten)
+      * [10.2. EMQX Konfiguration: Regel für MQTT-Heartbeat](https://www.google.com/search?q=%23102-emqx-konfiguration-regel-f%C3%BCr-mqtt-heartbeat)
+      * [10.3. `systemd timer` für den Heartbeat einrichten](https://www.google.com/search?q=%23103-systemd-timer-f%C3%BCr-den-heartbeat-einrichten)
+      * [10.4. Überprüfung in Uptime Kuma](https://www.google.com/search?q=%23104-%C3%BCberpr%C3%BCfung-in-uptime-kuma)
 
 -----
 
-## 1\. Übersicht und Vorteile
+## 1\. Einleitung
 
-  * **Paketname:** `emqx-broker-debian`
-  * **Zweck:** Bereitstellung von EMQX Broker (Open Source Edition) auf Arch Linux mittels des offiziellen Debian-Binaries.
-  * **Architektur:** `x86_64` (Anpassbar für `aarch64`).
-  * **Vorteile:**
-      * Umgeht Kompilierungsprobleme.
-      * Nutzt stabile, vom EMQX-Team getestete Binaries.
-      * Ermöglicht zentrale und einfache Bereitstellung über ein eigenes Pacman-Repository.
-      * Unterstützt **Clustering ohne Lizenzbeschränkungen** für Standard-Funktionen.
-      * Integration mit Systemd für einfache Verwaltung.
-      * Konfiguration erfolgt gemäß Arch Linux Dateisystem-Hierarchie (FHS).
+Diese Dokumentation führt dich durch die Installation, Konfiguration und Überwachung eines EMQX Clusters auf Arch Linux LXC Containern unter Proxmox. Es werden bewährte Methoden für Clustering, TLS-Verschlüsselung, Firewall-Konfiguration, automatische Updates mittels GitHub Actions und das Monitoring mit Uptime Kuma behandelt.
 
------
+## 2\. Arch Linux LXC Container auf Proxmox aufsetzen
 
-## 2\. Projektstruktur
+### 2.1. LXC erstellen
 
-Dein lokales und das GitHub-Repository (`archrepo`) sollte die folgende Struktur aufweisen:
+Erstelle zwei Arch Linux LXC Container in Proxmox. Dies dient der Hochverfügbarkeit und Skalierbarkeit deines EMQX Clusters.
 
+### 2.2. Installation von Paketen
+
+Auf beiden LXC-Containern benötigst du grundlegende Pakete. Aktualisiere zuerst das System und installiere dann die notwendigen Tools:
+
+```bash
+sudo pacman -Syu
+sudo pacman -S base-devel git nano openssh
 ```
-archrepo/
-├── .github/              # GitHub Actions Workflows
-│   └── workflows/
-│       └── generate-package-list.yml
-├── emqx-broker-debian/   # Ordner für das EMQX-Paket (PKGBUILD, etc.)
-│   ├── PKGBUILD
-│   └── emqx-broker-debian.install
-├── packages/             # Ordner für das Pacman-Repository (Pakete und DB-Dateien)
-│   ├── emqx-broker-debian-5.8.6-1-x86_64.pkg.tar.zst
-│   ├── archrepo.db.tar.gz
-│   ├── archrepo.files.tar.gz
-│   └── package_list.txt  # Automatisch generierte Paketliste
-└── README.md             # Dieses Dokument (falls im Root abgelegt)
+
+### 2.3. LXC vorbereiten
+
+Stelle sicher, dass die Netzwerkkonfiguration in beiden LXCs korrekt ist (statische IPs empfohlen) und die Hostnamen korrekt gesetzt sind (z.B. `emqx1.fritz.box`, `emqx2.fritz.box`). Dies ist entscheidend für das Clustering.
+
+## 3\. EMQX Installation
+
+EMQX wird aus dem Quellcode gebaut, um die Kontrolle über die Version und Konfiguration zu haben.
+
+### 3.1. PKGBUILD erstellen
+
+Erstelle ein `PKGBUILD` für EMQX. Dieses Skript automatisiert den Bau und die Installation des Pakets.
+
+```bash
+mkdir -p ~/emqx-pkgbuild
+cd ~/emqx-pkgbuild
+nano PKGBUILD
 ```
 
------
+Beispiel `PKGBUILD` (Stelle sicher, dass die `pkgver` deiner gewünschten EMQX-Version entspricht):
 
-## 3\. Das `PKGBUILD` – Die Paketbeschreibung
-
-Die `PKGBUILD` ist die Anleitung für `makepkg`, wie das EMQX-Paket gebaut wird.
-Lege diese Datei im Ordner `emqx-broker-debian/` ab.
-
-```makepkg
-# Maintainer: Dein Name <deine@email.com>
-pkgname=emqx-broker-debian
-pkgver=5.8.6 # Die Version des Open Source Brokers
-_deb_version=5.8.6 # Version des zugrunde liegenden Debian-Pakets
+```pkgbuild
+# PKGBUILD for EMQX (Example - adjust version as needed)
+pkgname=emqx
+pkgver=5.8.6 # <--- ANPASSEN AN AKTUELLE VERSION
 pkgrel=1
-pkgdesc="A highly scalable, reliable, and performant MQTT broker (Open Source Edition) based on the official Debian package."
+pkgdesc="A highly scalable, real-time MQTT messaging platform."
 arch=('x86_64')
 url="https://www.emqx.io/"
 license=('Apache')
-depends=('glibc' 'erlang')
-provides=("emqx=${pkgver}" "emqx-broker=${pkgver}")
-conflicts=("emqx" "emqx-enterprise" "emqx-git")
-install=${pkgname}.install
+depends=('erlang' 'openssl' 'ncurses') # Basic dependencies, may need more based on EMQX build requirements
+makedepends=('git' 'rebar3') # Build tools for Erlang
 
-# Source-URL des Debian-Pakets für EMQX Broker
-source=("emqx-${_deb_version}-debian12-amd64.deb::https://www.emqx.com/en/downloads/broker/v${_deb_version}/emqx-broker-${_deb_version}-debian12-amd64.deb")
+source=("https://github.com/emqx/emqx/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP') # Use actual checksum if available, or 'SKIP' for testing
 
-# SHA256-Checksumme des Debian-Pakets
-# WICHTIG: Ersetze 'HIER_DIE_TATSÄCHLICHE_CHECKSUMME_EINFÜGEN' durch die korrekte Checksumme der .deb-Datei!
-# Für 5.8.6:
-sha256sums=('442e946a5b67b14d2325c270a41f6236b3f7f07e59b34a622a55928d2d6c6984')
-
-noextract=("emqx-${_deb_version}-debian12-amd64.deb")
+build() {
+  cd "${srcdir}/emqx-${pkgver}"
+  make
+}
 
 package() {
-    # Vollständiges Debian-Paket in ein temporäres Verzeichnis entpacken, um an data.tar.xz zu kommen.
-    mkdir -p "${srcdir}/deb_root"
-    bsdtar -xf "${srcdir}/emqx-${_deb_version}-debian12-amd64.deb" -C "${srcdir}/deb_root"
+  cd "${srcdir}/emqx-${pkgver}"
+  # EMQX typically has a _build directory, we want to copy the runtime
+  # Adjust this based on actual EMQX build output structure
+  mkdir -p "${pkgdir}/usr/lib/emqx"
+  cp -a _build/default/rel/emqx/* "${pkgdir}/usr/lib/emqx/"
 
-    # Jetzt entpacken wir den gesamten Inhalt von data.tar.xz in das pkgdir.
-    # Hierbei werden die EMQX-Binaries und Bibliotheken in ${pkgdir}/usr/lib/emqx/ abgelegt.
-    # Die Konfigurationsdateien werden *innerhalb* von data.tar.xz unter ./etc/emqx/ abgelegt.
-    bsdtar --exclude=./var/run --exclude=./var/lock -xf "${srcdir}/deb_root/data.tar.xz" -C "${pkgdir}"
+  # Create symlink for /usr/bin/emqx
+  mkdir -p "${pkgdir}/usr/bin"
+  ln -s /usr/lib/emqx/bin/emqx "${pkgdir}/usr/bin/emqx"
 
-    # Verschieben der Konfigurationsdateien:
-    # Die Konfigurationsdateien liegen nach dem Entpacken von data.tar.xz unter ${pkgdir}/etc/emqx/
-    # Dieses Verzeichnis ist der korrekte Zielort gemäß FHS, daher ist hier kein 'mv' nötig,
-    # sondern nur eine Überprüfung der Existenz.
-    if [[ -d "${pkgdir}/etc/emqx" ]]; then
-        echo "EMQX configuration found at ${pkgdir}/etc/emqx."
-    else
-        echo "ERROR: EMQX configuration directory ${pkgdir}/etc/emqx not found after extracting data.tar.xz. Configuration might be missing."
-        exit 1 # Fehler abbrechen, wenn Konfiguration nicht gefunden wird.
-    fi
+  # Copy systemd service file (if provided by EMQX source or create custom)
+  mkdir -p "${pkgdir}/usr/lib/systemd/system/"
+  install -m644 "${srcdir}/emqx-${pkgver}/etc/emqx.service" "${pkgdir}/usr/lib/systemd/system/emqx.service"
 
-    # Temporäre Verzeichnisse bereinigen
-    rm -rf "${srcdir}/deb_root"
-
-    # Arch Linux spezifische Anpassungen
-
-    # Systemd Service-Datei an Arch-Konvention anpassen
-    # Verschiebt emqx.service von /lib/systemd/system nach /usr/lib/systemd/system
-    if [[ -f "${pkgdir}/lib/systemd/system/emqx.service" ]]; then
-        install -d "${pkgdir}/usr/lib/systemd/system"
-        mv "${pkgdir}/lib/systemd/system/emqx.service" "${pkgdir}/usr/lib/systemd/system/emqx.service"
-        # Leere Verzeichnisse aufräumen
-        rmdir "${pkgdir}/lib/systemd/system" 2>/dev/null || true
-        rmdir "${pkgdir}/lib/systemd" 2>/dev/null || true
-        rmdir "${pkgdir}/lib" 2>/dev/null || true
-    fi
-
-    # Hier die entscheidende Anpassung:
-    # Das Systemd-Unit-File anpassen, damit es die Konfigurationsdateien in /etc/emqx/ sucht.
-    # Die Environment-Variable EMQX_HOME sollte auf /usr/lib/emqx gesetzt sein.
-    # Die Environment-Variable EMQX_NODE__CONF sollte auf /etc/emqx gesetzt sein.
-    sed -i \
-        -e 's|Environment=EMQX_HOME=.*|Environment=EMQX_HOME=/usr/lib/emqx|g' \
-        -e 's|Environment=EMQX_NODE__CONF=.*|Environment=EMQX_NODE__CONF=/etc/emqx|g' \
-        "${pkgdir}/usr/lib/systemd/system/emqx.service"
-
-    # Lizenzdatei kopieren
-    if [[ -d "${pkgdir}/usr/share/doc/emqx" ]]; then
-        install -d "${pkgdir}/usr/share/licenses/${pkgname}"
-        cp -a "${pkgdir}/usr/share/doc/emqx/copyright" "${pkgdir}/usr/share/licenses/${pkgname}/"
-    fi
-
-    # Symlink für Binaries
-    local real_emqx_binary_path="/usr/lib/emqx/bin/emqx"
-    local symlink_location_in_pkgdir="${pkgdir}/usr/bin/emqx"
-
-    if [[ -f "${pkgdir}/usr/lib/emqx/bin/emqx" ]]; then
-        install -d "$(dirname "${symlink_location_in_pkgdir}")"
-        ln -sf "${real_emqx_binary_path}" "${symlink_location_in_pkgdir}"
-    else
-        echo "WARNING: EMQX binary not found at ${pkgdir}/usr/lib/emqx/bin/emqx. Symlink to /usr/bin/emqx will not be created."
-    fi
+  # Copy default configuration files
+  mkdir -p "${pkgdir}/etc/emqx/"
+  cp -a "${srcdir}/emqx-${pkgver}/etc/emqx.conf" "${pkgdir}/etc/emqx/"
+  cp -a "${srcdir}/emqx-${pkgver}/etc/cluster.hocon" "${pkgdir}/etc/emqx/"
+  cp -a "${srcdir}/emqx-${pkgver}/etc/certs/" "${pkgdir}/etc/emqx/"
+  cp -a "${srcdir}/emqx-${pkgver}/etc/plugins/" "${pkgdir}/etc/emqx/"
+  cp -a "${srcdir}/emqx-${pkgver}/etc/rules/" "${pkgdir}/etc/emqx/"
+  cp -a "${srcdir}/emqx-${pkgver}/etc/base.hocon" "${pkgdir}/etc/emqx/"
 }
 ```
 
------
+### 3.2. Abhängigkeiten installieren
 
-## 4\. `emqx-broker-debian.install` – Post-Installations-Skript
-
-Dieses Skript kümmert sich um Systembenutzer, Gruppen und Dateiberechtigungen.
-Lege diese Datei im Ordner `emqx-broker-debian/` ab.
+Installieren Sie die für den Bau notwendigen Abhängigkeiten:
 
 ```bash
-post_install() {
-  echo ">>> Adding system user 'emqx' and group 'emqx' if they don't exist..."
-  getent group emqx >/dev/null || groupadd -r emqx
-  getent passwd emqx >/dev/null || useradd -r -g emqx -d /usr/lib/emqx -s /bin/false -c "EMQX Broker User" emqx
-
-  echo ">>> Setting ownership for EMQX directories..."
-  chown -R emqx:emqx /usr/lib/emqx || true
-  mkdir -p /var/lib/emqx /var/log/emqx
-  chown -R emqx:emqx /var/lib/emqx || true
-  chown -R emqx:emqx /var/log/emqx || true
-
-  chown -R emqx:emqx /etc/emqx || true
-  chmod -R 755 /etc/emqx || true
-
-  systemctl daemon-reload >/dev/null 2>&1 || true
-}
-
-post_upgrade() {
-  post_install
-}
-
-post_remove() {
-  echo ">>> Removing system user 'emqx' and group 'emqx' if they exist and are not in use..."
-  userdel emqx >/dev/null 2>&1 || true
-  groupdel emqx >/dev/null 2>&1 || true
-
-  echo ">>> Cleaning up EMQX configuration and data directories..."
-  # WARNUNG: Dies entfernt die Konfiguration und Daten bei Deinstallation!
-  # Im Produktivsystem sollte dies VOR der Deinstallation gesichert werden.
-  rm -rf /etc/emqx >/dev/null 2>&1 || true
-  rm -rf /var/lib/emqx >/dev/null 2>&1 || true
-  rm -rf /var/log/emqx >/dev/null 2>&1 || true
-}
+sudo pacman -S erlang openssl ncurses git rebar3
 ```
 
------
+### 3.3. Paket kompilieren und installieren
 
-## 5\. Vorbereitung: Installation und Paketbau
+Navigieren Sie in das Verzeichnis mit Ihrem `PKGBUILD` und bauen Sie das Paket, dann installieren Sie es.
 
-### 5.1. Build-Umgebung einrichten
+```bash
+cd ~/emqx-pkgbuild
+makepkg -si
+```
 
-1.  **Notwendige Build-Tools installieren:**
-    ```bash
-    sudo pacman -S --needed base-devel devtools
-    ```
-2.  **Laden Sie das Debian-Paket herunter:**
-      * Beziehen Sie die `emqx-5.8.6-debian12-amd64.deb` Datei von der offiziellen EMQX-Website: [https://www.emqx.com/en/downloads/broker/v5.8.6/emqx-5.8.6-debian12-amd64.deb](https://www.emqx.com/en/downloads/broker/v5.8.6/emqx-5.8.6-debian12-amd64.deb)
-      * Legen Sie diese Datei im selben Verzeichnis ab wie Ihre `PKGBUILD` (z.B. `~/my-packages/emqx-broker-debian/`).
+### 3.4. Systemd-Dienst starten und aktivieren
 
-### 5.2. EMQX-Paket bauen
+Nach der Installation aktivieren und starten Sie den EMQX-Dienst:
 
-1.  **Navigieren Sie in das Paket-Verzeichnis:**
-    ```bash
-    cd ~/my-packages/emqx-broker-debian/
-    ```
-2.  **Führen Sie `makepkg` aus:**
-    ```bash
-    makepkg -s
-    ```
-    Dies erstellt die `.pkg.tar.zst`-Datei (z.B. `emqx-broker-debian-5.8.6-1-x86_64.pkg.tar.zst`).
+```bash
+sudo systemctl enable emqx
+sudo systemctl start emqx
+sudo systemctl status emqx
+```
 
------
+## 4\. EMQX Cluster Konfiguration
 
-## 6\. Eigenes Pacman-Repository auf GitHub Pages
+Konfiguriere beide EMQX-Nodes für den Cluster-Betrieb.
 
-### 6.1. GitHub Repository erstellen (Neu und Sauber)
+### 4.1. EMQX Cluster Nodes benennen
 
-1.  **Neues GitHub Repository erstellen:**
+Bearbeite auf **beiden** Nodes die `/etc/emqx/emqx.conf` und passe den `node.name` an den jeweiligen Hostnamen an.
 
-      * Gehe zu [GitHub](https://github.com/) und logge dich ein.
-      * Erstelle ein **neues Repository**.
-      * Name: **`archrepo`** (einfach, ohne Sonderzeichen oder Unterstriche).
-      * Setze es auf **"Public"**.
-      * **Wichtig:** **NICHT mit README, .gitignore oder Lizenz initialisieren.**
+```bash
+sudo nano /etc/emqx/emqx.conf
+```
 
-2.  **Lokal klonen:**
+**Auf `emqx1`:**
 
-      * Kopier die HTTPS-URL des neuen Repos.
-      * Klonen auf deinem lokalen System (wo du Pakete baust):
-        ```bash
-        git clone https://github.com/dp20eic/archrepo.git
-        cd archrepo
-        ```
-
-3.  **Erstelle die benötigten Ordner:**
-
-    ```bash
-    mkdir -p packages .github/workflows
-    ```
-
-### 6.2. Pakete und Datenbank hinzufügen
-
-1.  **Kopiere das gebaute EMQX-Paket:**
-    Kopier die `emqx-broker-debian-5.8.6-1-x86_64.pkg.tar.zst` Datei in den **`packages/`** Ordner deines **lokalen `archrepo` Repositorys**:
-
-    ```bash
-    cp ~/my-packages/emqx-broker-debian/emqx-broker-debian-5.8.6-1-x86_64.pkg.tar.zst ~/my-packages/archrepo/packages/
-    ```
-
-2.  **Erstelle/Aktualisiere die Repository-Datenbank:**
-
-      * Navigiere in den **`packages/`** Ordner deines **lokalen `archrepo`**:
-        ```bash
-        cd ~/my-packages/archrepo/packages/
-        ```
-      * Führe `repo-add` aus. **Der Name `archrepo` ist entscheidend\!**
-        ```bash
-        repo-add archrepo.db.tar.gz emqx-broker-debian-5.8.6-1-x86_64.pkg.tar.zst
-        ```
-        Dies erstellt die Dateien `archrepo.db.tar.gz` und `archrepo.files.tar.gz`.
-
-3.  **Committen und Pushen zu GitHub:**
-
-      * Gehe zurück ins Root-Verzeichnis deines lokalen `archrepo` (`cd ..`).
-      * ```bash
-          git add .
-          git commit -m "Initial setup of archrepo with emqx-broker-debian package"
-          git push origin main
-        ```
-      * Bei der Authentifizierung: Gib deinen **GitHub-Benutzernamen** (`dp20eic`) und deinen **Personal Access Token** (als Passwort) ein.
-
-### 6.3. GitHub Pages aktivieren und konfigurieren
-
-1.  **Gehe zu den Repository-Einstellungen auf GitHub:**
-    Öffne `https://github.com/dp20eic/archrepo` in deinem Browser. Klick auf **"Settings"** und dann auf **"Pages"**.
-
-2.  **Konfiguriere die "Build and deployment" Quelle:**
-
-      * **Branch:** Wähle **`main`** aus.
-      * **Folder:** Wähle **`/packages`** aus (Dieser Ordner sollte jetzt verfügbar sein).
-      * Klicke auf **"Save"**.
-
-3.  **Warte auf die Bereitstellung:**
-    GitHub Pages beginnt mit dem Build. Warte, bis der Status "Your site is published at..." angezeigt wird.
-
-4.  **Kopiere die generierte URL:**
-    Die URL sollte jetzt **`https://dp20eic.github.io/archrepo/packages/`** sein. **Diese URL ist deine Server-URL für Pacman.**
-
------
-
-## 7\. Pacman im Proxmox LXC konfigurieren
-
-Auf jedem deiner Arch Linux LXCs:
-
-1.  **Bearbeite die Pacman-Konfiguration** `/etc/pacman.conf`:
-
-    ```bash
-    sudo nano /etc/pacman.conf
-    ```
-
-2.  **Füge am Anfang der Datei** (direkt unter den anderen `[core]`, `[extra]` etc.) diesen neuen Repository-Eintrag hinzu:
-
-    ```
-    [archrepo] # <--- DIESER NAME MUSS MIT DEM NAME DER DB-DATEI (archrepo.db.tar.gz) ÜBEREINSTIMMEN
-    SigLevel = Optional TrustAll # Für private, unsignierte Repos. Für signierte Pakete 'Required'
-    Server = https://dp20eic.github.io/archrepo/packages/ # <--- DIE VON GITHUB PAGES GENERIERTE URL UND MIT / ENDEN!
-    ```
-
-3.  **Speichere und schließe die Datei.**
-
-4.  **Aktualisiere die Paketdatenbanken:**
-
-    ```bash
-    sudo pacman -Sy
-    ```
-
-    Du solltest sehen, wie `archrepo` synchronisiert wird.
-
-5.  **Installiere das EMQX Broker-Paket:**
-
-    ```bash
-    sudo pacman -S emqx-broker-debian
-    ```
-
------
-
-## 8\. EMQX-Konfiguration und Cluster-Bildung
-
-### 8.1. GUI für Regel-Engine aktivieren (optional)
-
-Für eine einfachere Verwaltung der Regel-Engine über das Dashboard:
-
-1.  **Erstelle oder bearbeite** die Datei `/etc/emqx/plugins/emqx_rule_engine.conf` auf deinem LXC:
-    ```bash
-    sudo nano /etc/emqx/plugins/emqx_rule_engine.conf
-    ```
-2.  Füge diese Zeile hinzu:
-    ```hocon
-    rule_engine.enable_dashboard = true
-    ```
-3.  **Starte EMQX neu:** `sudo systemctl restart emqx`
-4.  Gehe zum EMQX Dashboard (Port 18083). Du solltest nun den Menüpunkt **"Rule Engine"** sehen.
-
-### 8.2. EMQX Broker konfigurieren (`/etc/emqx/emqx.conf`)
-
-Diese Einstellungen müssen auf **jedem EMQX-Node** identisch sein (bis auf `node.name`):
-
-```erlang
-## /etc/emqx/emqx.conf (auf allen Nodes)
-
+```hocon
 node {
-  name = "emqx@${EMQX_NODE_NAME}" # Wird automatisch auf Hostnamen gesetzt
-  cookie = "DEIN_SICHERER_CLUSTER_COOKIE_HIER" # WICHTIG: MUSS AUF ALLEN NODES IDENTISCH SEIN!
-  data_dir = "/var/lib/emqx"
+  name = "emqx@emqx1.fritz.box"
+  # ...
 }
-
-cluster {
-  name = emqxcl
-  discovery_strategy = manual
-}
-
-listeners {
-  tcp.default = 1883
-}
-
-dashboard {
-  listeners {
-    http.bind = 18083
-  }
-}
-
-management {
-  listeners {
-    http.bind = 18083
-  }
-}
-
-auth.acl_file = "etc/acl.conf"
 ```
 
-**Wichtige Schritte:**
+**Auf `emqx2`:**
 
-1.  **`node.cookie`**: Setze hier einen **langen, zufälligen und sicheren** Wert. Dieser muss auf **allen Cluster-Nodes exakt gleich** sein.
-2.  **Hostnamen-Auflösung:** Stelle sicher, dass jeder EMQX-Node die Hostnamen der anderen Nodes auflösen kann (z.B. über DNS oder `/etc/hosts`). Beispiel für `/etc/hosts` auf beiden Nodes:
-    ```
-    # Füge diese Zeilen zu /etc/hosts auf beiden Nodes hinzu
-    192.168.1.101 emqx-node1 # <--- Ersetze durch die tatsächliche IP von Node 1
-    192.168.1.102 emqx-node2 # <--- Ersetze durch die tatsächliche IP von Node 2
-    ```
+```hocon
+node {
+  name = "emqx@emqx2.fritz.box"
+  # ...
+}
+```
 
-### 8.3. EMQX starten und Cluster bilden
+### 4.2. Erlang Cookie konfigurieren
 
-1.  **Starte EMQX auf beiden Nodes:**
+Setze auf **beiden** Nodes den `node.cookie` in `/etc/emqx/emqx.conf` auf einen **identischen, langen und zufälligen String**. Dies ist entscheidend für die Sicherheit des Clusters.
+
+```bash
+sudo nano /etc/emqx/emqx.conf
+```
+
+```hocon
+node {
+  # ...
+  cookie = "your_super_secret_and_long_erlang_cookie" # <-- Diesen Wert ändern und auf beiden Nodes gleich setzen!
+  # ...
+}
+```
+
+Nach den Änderungen an `emqx.conf` auf beiden Nodes:
+
+```bash
+sudo systemctl restart emqx
+```
+
+### 4.3. EMQX Cluster bilden
+
+Wähle einen Node (z.B. `emqx1`) als den "Starter" und füge den anderen Node hinzu. Führe diese Schritte nur auf **einem** Node aus.
+
+**Auf `emqx1`:**
+
+1.  **Node-Status überprüfen:**
+
     ```bash
-    sudo systemctl daemon-reload
-    sudo systemctl enable emqx
-    sudo systemctl start emqx
-    sudo systemctl status emqx
+    emqx ctl status
     ```
-2.  **Cluster bilden (nur auf *einem* der Nodes ausführen):**
+
+    Stelle sicher, dass EMQX läuft.
+
+2.  **Cluster join vom zweiten Node aus initiieren (vom ersten Node aus):**
+
     ```bash
-    sudo emqx ctl cluster join emqx@emqx-node2 # Ersetze emqx-node2 durch den Hostnamen des Partner-Nodes
+    emqx ctl cluster join emqx@emqx2.fritz.box
     ```
-3.  **Cluster-Status überprüfen (auf beiden Nodes):**
+
+3.  **Cluster-Status überprüfen:**
+
     ```bash
-    sudo emqx ctl cluster status
+    emqx ctl cluster status
     ```
-    Beide Nodes sollten nun als "Running" im Cluster angezeigt werden.
 
------
+    Beide Nodes sollten nun als Teil des Clusters angezeigt werden.
 
-## 9\. Monitoring mit Uptime Kuma und WebHooks
+## 5\. Let's Encrypt Zertifikate für EMQX
 
-Nutze EMQX WebHooks, um den Broker-Status an Uptime Kuma zu senden.
+Sichere die MQTT- und Dashboard-Verbindungen mit TLS/SSL-Zertifikaten von Let's Encrypt. Dies ist nur auf einem Node (z.B. `emqx1`) notwendig, da die Zertifikate dann auf den anderen Node repliziert werden können.
 
-1.  **Uptime Kuma Push Monitor erstellen:**
+### 5.1. Certbot Installation und Konfiguration
 
-      * In Uptime Kuma: "Add New Monitor" -\> Type: **"Push"**.
-      * Gib einen Namen (z.B. "EMQX Broker Status") und ein "Heartbeat Interval" (z.B. 60s).
-      * **Kopiere die generierte "Push URL"** (z.B. `https://your-uptime-kuma-url/api/push/<YOUR_API_KEY>`).
+Installieren Sie Certbot und beantragen Sie die Zertifikate.
 
-2.  **EMQX WebHook-Regel erstellen (Regel-Engine):**
+```bash
+sudo pacman -S certbot certbot-nginx # certbot-nginx ist nützlich, wenn du Nginx als Reverse Proxy nutzt
+```
 
-      * Erstelle einen Timer in deiner `emqx.conf` (oder `etc/plugins/emqx_rule_engine.conf`):
-        ```hocon
-        rule_engine.timer.my_heartbeat_timer {
-          interval = "50s" # Kleiner als Uptime Kuma Interval
-          event = "timer_event_emqx_heartbeat" # Benutzerdefinierter Event-Name
-        }
-        ```
-      * Erstelle eine Regel-Datei unter `/etc/emqx/rules/uptime_kuma_heartbeat.rule`:
-        ```hocon
-        ## /etc/emqx/rules/uptime_kuma_heartbeat.rule
-        rule {
-          id = "uptime_kuma_heartbeat"
-          description = "Send a regular heartbeat webhook to Uptime Kuma"
-          for = "timer_event_emqx_heartbeat"
-          actions = [
-            {
-              function = "do_webhook"
-              args = {
-                url = "https://your-uptime-kuma-url/api/push/<YOUR_API_KEY>" # <--- DEINE UPTIME KUMA URL HIER!
-                method = "GET"
-                headers = {}
-                body = ""
-                pool = "default"
-              }
-            }
-          ]
-        }
-        ```
-      * **Speichere die Dateien und starte EMQX neu:** `sudo systemctl restart emqx`.
+Beantragen Sie die Zertifikate (passen Sie `your.domain.com` an):
 
------
+```bash
+sudo certbot certonly --standalone -d mqtt.your.domain.com -d dashboard.your.domain.com --agree-tos --email your-email@example.com
+```
 
-## 10\. Automatisierte Paketliste mit GitHub Actions
+Die Zertifikate werden typischerweise unter `/etc/letsencrypt/live/mqtt.your.domain.com/` gespeichert.
 
-Ein GitHub Actions Workflow generiert und aktualisiert automatisch eine Liste aller im Repository enthaltenen Pakete in der Datei `package_list.txt`.
+### 5.2. Zertifikate für EMQX konfigurieren
 
-### 10.1. Workflow-Datei (`.github/workflows/generate-package-list.yml`)
+Passe die EMQX-Konfiguration an, um die Let's Encrypt Zertifikate zu verwenden.
 
-Lege diese Datei im Ordner `.github/workflows/` deines `archrepo`-Repositorys ab.
+```bash
+sudo nano /etc/emqx/emqx.conf
+```
+
+**Für MQTT TLS:**
+Aktiviere den TLS Listener und gib die Pfade zu den Zertifikaten an:
+
+```hocon
+listeners.ssl.default {
+  bind = "8883"
+  enable = true
+  ssl_options {
+    # Full chain of certificates
+    certfile = "/etc/letsencrypt/live/mqtt.your.domain.com/fullchain.pem"
+    # Private key
+    keyfile = "/etc/letsencrypt/live/mqtt.your.domain.com/privkey.pem"
+    # ... weitere SSL-Optionen wie 'cacertfile', 'verify', 'versions'
+  }
+}
+```
+
+**Für Dashboard HTTPS:**
+Aktiviere den HTTPS Listener für das Dashboard:
+
+```hocon
+dashboard {
+  listeners.https {
+    bind = "18083" # Oder ein anderer Port, wenn du 18083 schon für HTTP nutzt
+    enable = true
+    ssl_options {
+      # Full chain of certificates
+      certfile = "/etc/letsencrypt/live/dashboard.your.domain.com/fullchain.pem"
+      # Private key
+      keyfile = "/etc/letsencrypt/live/dashboard.your.domain.com/privkey.pem"
+      # ...
+    }
+  }
+}
+```
+
+Nach den Änderungen EMQX neu starten: `sudo systemctl restart emqx`.
+
+## 6\. EMQX Dashboard und Basic Security
+
+### 6.1. Dashboard Zugang
+
+Das EMQX Dashboard ist über Port 18083 (HTTP) oder 18084 (HTTPS, falls konfiguriert) erreichbar: `http://<EMQX_IP_ADDRESS>:18083`.
+
+### 6.2. Standard-Benutzer und Passwörter ändern
+
+**Ändere UNBEDINGT die Standardanmeldedaten des Dashboards\!**
+
+  * Melde dich mit dem Standardbenutzer `admin` und Passwort `public` an.
+  * Gehe zu **"System" -\> "Users"** und ändere das Passwort für den `admin`-Benutzer.
+  * Erstelle bei Bedarf weitere Benutzer mit spezifischen Rollen.
+
+## 7\. Firewall-Konfiguration (ufw)
+
+Konfiguriere die Firewall (ufw) auf **jedem** EMQX-Node, um die notwendigen Ports zu öffnen.
+
+### 7.1. UFW installieren und konfigurieren
+
+```bash
+sudo pacman -S ufw
+sudo ufw enable
+```
+
+### 7.2. Erforderliche Ports öffnen
+
+  * **MQTT (Standard):** 1883/tcp
+  * **MQTT (TLS):** 8883/tcp (falls konfiguriert)
+  * **Dashboard (HTTP):** 18083/tcp
+  * **Dashboard (HTTPS):** 18084/tcp (falls konfiguriert)
+  * **Erlang Distribution (Cluster-Kommunikation):** 4370/tcp (Standard)
+  * **EMQX Cluster Port Range:** Standardmäßig `6000-60000`/tcp (EMQX wählt einen zufälligen Port im `listener.tcp.internal` Bereich, oft ab 6000. Überprüfe deine `emqx.conf` für `cluster.rpc_port` oder `listener.tcp.internal` um den genauen Port oder Bereich zu bestimmen.)
+
+<!-- end list -->
+
+```bash
+sudo ufw allow 1883/tcp
+sudo ufw allow 8883/tcp
+sudo ufw allow 18083/tcp
+sudo ufw allow 18084/tcp
+sudo ufw allow 4370/tcp
+sudo ufw allow 6000:60000/tcp # Oder den spezifischen Bereich anpassen
+sudo ufw status verbose
+```
+
+## 8\. GitHub Actions Integration (Automatischer Paket-Push)
+
+Automatisiere das Bauen und Pushen deiner Arch Linux Pakete (z.B. des EMQX PKGBUILD) auf ein GitHub-basiertes Repository mit GitHub Actions.
+
+### 8.1. SSH-Schlüsselpaar generieren
+
+Generiere ein SSH-Schlüsselpaar, das GitHub Actions zum Pushen verwenden kann. **Verwenden Sie keine Passphrase für den privaten Schlüssel.**
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/github_actions_deploy -N ""
+```
+
+  * **Privater Schlüssel:** `~/.ssh/github_actions_deploy` (Dieser muss in GitHub Secrets hinterlegt werden).
+  * **Öffentlicher Schlüssel:** `~/.ssh/github_actions_deploy.pub` (Dieser muss zum `authorized_keys` auf deinem LXC hinzugefügt werden).
+
+### 8.2. GitHub Secrets konfigurieren
+
+Füge den privaten Schlüssel als GitHub Secret in deinem Repository hinzu:
+
+1.  Gehe zu deinem GitHub Repository -\> **Settings -\> Secrets and variables -\> Actions**.
+2.  Klicke auf **"New repository secret"**.
+3.  **Name:** `SSH_PRIVATE_KEY`
+4.  **Value:** Füge den **kompletten Inhalt** deines privaten SSH-Schlüssels (`~/.ssh/github_actions_deploy`) ein, beginnend mit `-----BEGIN OPENSSH PRIVATE KEY-----` und endend mit `-----END OPENSSH PRIVATE KEY-----`.
+
+### 8.3. GitHub Actions Workflow einrichten
+
+Erstelle eine `.github/workflows/build.yml`-Datei in deinem Repository, die den Build- und Push-Prozess definiert.
 
 ```yaml
-name: Generate Package List
+# .github/workflows/build.yml
+name: Build and Deploy Arch Package
 
 on:
   push:
     branches:
-      - main # Führt den Workflow aus, wenn ein Push auf den main-Branch erfolgt
-    paths:
-      - 'packages/*.db.tar.gz' # Nur ausführen, wenn die Datenbankdatei geändert wird
-      - 'packages/*.pkg.tar.zst' # Oder wenn Pakete hinzugefügt/aktualisiert werden
-  workflow_dispatch: {} # Erlaubt das manuelle Starten des Workflows über die GitHub UI
+      - main # Trigger on pushes to the main branch
 
 jobs:
   build:
-    permissions:
-      contents: write # Dies ist entscheidend, damit der Workflow die Liste in das Repo zurückschreiben kann!
-
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.8.0
       with:
-        python-version: '3.x'
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Generate package list with Python
-      working-directory: packages # Führt das Skript im packages-Ordner aus
+    - name: Add SSH key to known_hosts
       run: |
-        cat <<EOF > generate_list.py
-        import tarfile
-        import os
-
-        db_file = 'archrepo.db.tar.gz'
-        output_file = 'package_list.txt'
-        packages = []
-
-        if not os.path.exists(db_file):
-            print(f"Error: Database file {db_file} not found!", file=os.sys.stderr)
-            exit(1)
-
-        try:
-            with tarfile.open(db_file, 'r:gz') as tar:
-                for member in tar.getmembers():
-                    if '/desc' in member.name and not member.isdir():
-                        try:
-                            desc_content = tar.extractfile(member).read().decode('utf-8')
-                            name = ""
-                            version = ""
-                            description = ""
-
-                            lines = desc_content.splitlines()
-                            for i, line in enumerate(lines):
-                                if line == "%NAME%" and i + 1 < len(lines):
-                                    name = lines[i+1]
-                                elif line == "%VERSION%" and i + 1 < len(lines):
-                                    version = lines[i+1]
-                                elif line == "%DESC%" and i + 1 < len(lines):
-                                    description = lines[i+1]
-                                if name and version and description:
-                                    break
-                            
-                            if name and version:
-                                packages.append(f"{name} {version} - {description}")
-                        except Exception as e:
-                            print(f"Warning: Could not process {member.name}: {e}", file=os.sys.stderr)
-            
-            packages.sort(key=lambda s: s.lower()) # Alphabetisch sortieren
-            with open(output_file, 'w') as f:
-                for pkg_info in packages:
-                    f.write(pkg_info + '\n')
-            
-            print(f"Package list generated successfully: {output_file}", file=os.sys.stderr)
-
-        except Exception as e:
-            print(f"Error processing {db_file}: {e}", file=os.sys.stderr)
-            exit(1)
-
-        EOF
-        python generate_list.py
-        rm generate_list.py
-
-    - name: Push generated package list to main branch
+        mkdir -p ~/.ssh
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+        ssh-keyscan your_lxc_server_ip >> ~/.ssh/known_hosts # Add your LXC server's fingerprint
+      
+    - name: Build and Push Package
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add packages/package_list.txt
-        git commit -m "Update package list [skip ci]" || echo "No changes to package list."
-        git push origin main
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Example: Replace with your actual build and push commands
+        # This part assumes you have a script or commands to build your PKGBUILD
+        # and then rsync/scp it to your LXC server.
+        
+        # Example: Build package in a Docker container (archlinux/archlinux)
+        docker run --rm -v "$(pwd):/build" archlinux/archlinux /bin/bash -c "cd /build && makepkg -s --noconfirm"
+        
+        # Example: Rsync the built package to your Arch Linux LXC
+        # Ensure 'your_user@your_lxc_server_ip' has permissions to write to '/srv/archrepo'
+        rsync -avz --delete *.pkg.tar.zst your_user@your_lxc_server_ip:/srv/archrepo/
 ```
 
-### 10.2. Manuelle Schritte zur Aktualisierung der Paketliste
+### 8.4. Arch Linux Repository aufsetzen
 
-1.  **Lokal im Repository:** Führe `repo-add` im `packages/` Ordner aus, um die Datenbank zu aktualisieren (z.B. nach Hinzufügen eines neuen Pakets):
+Auf deinem Arch Linux LXC Container:
+
+1.  **Repository-Verzeichnis erstellen:**
+
     ```bash
-    cd ~/my-packages/archrepo/packages/
-    repo-add archrepo.db.tar.gz <neues_paket>.pkg.tar.zst
+    sudo mkdir -p /srv/archrepo
+    sudo chown your_user:your_user /srv/archrepo # Gib dem Benutzer, der per SSH pusht, Schreibrechte
     ```
-2.  **Committen und Pushen:** Gehe ins Root-Verzeichnis deines `archrepo` und pushe die Änderungen:
+
+2.  **Repo-Tool installieren:**
+
     ```bash
-    cd ~/my-packages/archrepo/
-    git add .
-    git commit -m "Updated repository with new packages/db"
-    git push origin main
+    sudo pacman -S repo
     ```
-    Dieser Push wird den GitHub Actions Workflow `Generate Package List` automatisch auslösen.
 
-### 10.3. Paketliste einsehen
+3.  **Repository initialisieren und hinzufügen:**
 
-Die automatisch generierte Liste der Pakete ist unter folgender URL verfügbar:
-`https://dp20eic.github.io/archrepo/packages/package_list.txt`
+    ```bash
+    cd /srv/archrepo
+    repo-add yourrepo.db.tar.gz *.pkg.tar.zst # Erstelle oder aktualisiere die Datenbank
+    ```
 
------
+    Dieser Befehl muss jedes Mal ausgeführt werden, wenn neue Pakete hinzugefügt oder aktualisiert werden. Du kannst dies in einem Post-Receive-Hook für Git oder einem separaten Cron-Job automatisieren.
+
+## 9\. Uptime Kuma Installation und Monitoring (Basis)
+
+Uptime Kuma ist ein benutzerfreundliches Überwachungstool, das dir den Status deiner Dienste anzeigt.
+
+### 9.1. Uptime Kuma Installation (Docker)
+
+Die einfachste Methode ist die Installation mittels Docker:
+
+```bash
+docker run -d --restart=always -p 3001:3001 -v uptime-kuma:/app/data --name uptime-kuma louislam/uptime-kuma:1
+```
+
+Uptime Kuma ist dann unter `http://<Your-Server-IP>:3001` erreichbar.
+
+### 9.2. Einfaches HTTP(s) Monitoring
+
+Füge einen grundlegenden Monitor für das EMQX Dashboard hinzu:
+
+1.  Im Uptime Kuma Dashboard: **"Add New Monitor"**.
+2.  **Monitor Type:** `HTTP(s)`.
+3.  **Friendly Name:** "EMQX Dashboard".
+4.  **URL:** `http://<EMQX_IP_ADDRESS>:18083` (oder HTTPS-URL, falls konfiguriert).
+5.  **Heartbeat Interval:** Z.B. `60 Sekunden`.
+6.  **Setup Notification:** Konfiguriere eine Benachrichtigungsmethode (E-Mail, Telegram etc.).
+
+## 10\. EMQX Cluster Überwachung mit Uptime Kuma (Heartbeat)
+
+Um die Verfügbarkeit deines EMQX-Clusters zu überwachen, kannst du Uptime Kuma als Heartbeat-Monitor verwenden. Da die direkte "Timed Event"-Funktion im EMQX Dashboard deiner Version möglicherweise nicht sichtbar ist, nutzen wir eine Kombination aus `systemd timer` auf dem EMQX-Server und der EMQX Regel-Engine.
+
+#### 10.1. Uptime Kuma: Push Monitor einrichten
+
+1.  Melde dich bei deinem Uptime Kuma Dashboard an.
+2.  Klicke auf **"Add New Monitor"**.
+3.  Wähle als **"Monitor Type"** die Option **"Push"**.
+4.  Konfiguriere die Details:
+      * **Friendly Name:** Z.B. "EMQX Broker Heartbeat - Node 1".
+      * **Heartbeat Interval:** Setze dies auf `60 Sekunden`. Dieser Wert muss *länger* sein als das Intervall, mit dem EMQX den Webhook sendet.
+      * **Expiration:** Z.B. `120 Sekunden`.
+5.  Klicke auf **"Save"**.
+6.  **Kopiere die "Push URL"**, die angezeigt wird (z.B. `https://your-uptime-kuma-url/api/push/<YOUR_API_KEY>`). Du benötigst diese später.
+
+#### 10.2. EMQX Konfiguration: Regel für MQTT-Heartbeat
+
+Da der `timer`-Block nicht direkt in der `emqx.conf` funktioniert und die "Timed Events" im Dashboard fehlen, erstellen wir eine Regel, die auf eine spezielle MQTT-Nachricht reagiert.
+
+1.  **`emqx.conf` bereinigen:**
+    Stelle sicher, dass der fehlerhafte `rule_engine { timer. ... }` Block **vollständig aus** deiner `/etc/emqx/emqx.conf` entfernt wurde.
+
+    ```hocon
+    # Dieser Block muss entfernt sein:
+    # rule_engine {
+    #   timer.uptime_kuma_heartbeat_timer {
+    #     interval = "50s"
+    #     event = "timer_event_emqx_heartbeat"
+    #   }
+    # }
+    ```
+
+    Danach EMQX neu starten: `sudo systemctl restart emqx`.
+
+2.  **Im EMQX Dashboard (via Browser: `http://<EMQX_IP_ADDRESS>:18083`):**
+
+      * Navigiere zu **"Rule Engine"** (oder **"Rules"**).
+      * Klicke auf **"+ Create"**.
+      * **Rule ID / Name:** Gib einen Namen ein, z.B. `uptime_kuma_mqtt_heartbeat_rule`.
+      * **Data Inputs:** Klicke auf **"+ Add Input"**.
+          * **Input Type:** Wähle `Messages`.
+          * **Topic:** Gib das Topic ein, auf das der Heartbeat gesendet wird, z.B. `/emqx/heartbeat`. Klicke auf "Confirm".
+      * **SQL Editor:** Die Abfrage sollte nun so aussehen:
+        ```sql
+        SELECT * FROM "messages" WHERE topic = '/emqx/heartbeat'
+        ```
+      * Klicke auf **"Next"**.
+
+3.  **Action Outputs konfigurieren:**
+
+      * Klicke auf **"+ Add Action"**.
+      * **Type of Action:** Wähle **`HTTP Server`**.
+      * **Connectors:** Da hier noch kein Connector existiert, klicke auf das **Plus-Symbol (`+`)** neben dem Dropdown-Feld.
+          * Es öffnet sich ein neues Pop-up zur Erstellung eines Connectors.
+          * **Name:** Gib einen Namen ein, z.B. `UptimeKuma_Webhook_Connector`.
+          * **URL:** **Füge hier deine komplette Uptime Kuma Push URL ein\!** (z.B. `https://your-uptime-kuma-url/api/push/<YOUR_API_KEY>`).
+          * **Method:** Wähle **`GET`**.
+          * **Headers/Body:** Lasse diese Felder leer. Entferne auch den standardmäßig hinzugefügten `content-type` Header (Mülleimer-Icon), da er nicht benötigt wird.
+          * Klicke auf **"Test Connectivity"** und dann auf **"Create"** (oder "Confirm") in diesem Pop-up.
+      * Wähle nun den soeben erstellten Connector (`UptimeKuma_Webhook_Connector`) aus dem `Connectors`-Dropdown-Menü aus.
+      * **URL Path:** Lasse dieses Feld **LEER**. Die vollständige URL ist bereits im Connector definiert.
+      * **Method:** Wähle erneut **`GET`** (sollte vom Connector übernommen werden).
+      * **Headers/Body:** Stelle sicher, dass hier keine unnötigen Header oder Body-Inhalte vorhanden sind.
+      * Klicke auf **"Create"** (oder "Confirm") in diesem "Add Action" Fenster.
+      * Klicke zuletzt auf **"Save"** (oder "Create Rule") im Hauptfenster der Regel.
+      * Stelle sicher, dass die Regel in der "Rule List" **aktiviert** ist (grüner Schalter).
+
+#### 10.3. `systemd timer` für den Heartbeat einrichten
+
+Wir nutzen `systemd timer`, um regelmäßig eine MQTT-Nachricht an EMQX zu senden, welche die Regel auslöst.
+
+1.  **Heartbeat-Skript erstellen:**
+    Erstelle die Datei `/usr/local/bin/emqx_heartbeat.sh`:
+
+    ```bash
+    sudo nano /usr/local/bin/emqx_heartbeat.sh
+    ```
+
+    Inhalt:
+
+    ```bash
+    #!/bin/bash
+
+    EMQX_TOPIC="/emqx/heartbeat"
+    MESSAGE=""
+
+    # Sende eine leere Nachricht an das Heartbeat-Topic mit emqx ctl
+    /usr/lib/emqx/bin/emqx ctl pub \
+      -t "$EMQX_TOPIC" \
+      -p "$MESSAGE" \
+      -q 0
+    ```
+
+    Mache das Skript ausführbar:
+
+    ```bash
+    sudo chmod +x /usr/local/bin/emqx_heartbeat.sh
+    ```
+
+2.  **Service-Unit-Datei erstellen:**
+    Diese Datei beschreibt, was der Timer ausführen soll.
+
+    ```bash
+    sudo nano /etc/systemd/system/emqx-heartbeat.service
+    ```
+
+    Inhalt:
+
+    ```ini
+    [Unit]
+    Description=EMQX Heartbeat to Uptime Kuma
+    # Stellt sicher, dass Netzwerk und EMQX laufen, bevor der Service startet
+    After=network.target emqx.service
+
+    [Service]
+    Type=oneshot
+    ExecStart=/usr/local/bin/emqx_heartbeat.sh
+    # Führe das Skript als der EMQX-Benutzer aus
+    User=emqx
+    # Führe das Skript als die EMQX-Gruppe aus
+    Group=emqx
+    StandardOutput=journal
+    StandardError=journal
+    ```
+
+    Speichere die Datei.
+
+3.  **Timer-Unit-Datei erstellen:**
+    Diese Datei definiert, wann der Service ausgeführt werden soll.
+
+    ```bash
+    sudo nano /etc/systemd/system/emqx-heartbeat.timer
+    ```
+
+    Inhalt:
+
+    ```ini
+    [Unit]
+    Description=Run EMQX Heartbeat every 50 seconds
+
+    [Timer]
+    OnUnitActiveSec=50s
+    # Starte den Service 50 Sekunden nachdem er das letzte Mal aktiv war
+
+    # Optional: Führt den Job nach einem Neustart aus, wenn er während des Ausfalls fällig gewesen wäre
+    # Persistent=true
+
+    [Install]
+    WantedBy=timers.target
+    ```
+
+    Speichere die Datei.
+
+4.  **`systemd`-Konfiguration neu laden, Timer aktivieren und starten:**
+
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl enable emqx-heartbeat.timer
+    sudo systemctl start emqx-heartbeat.timer
+    ```
+
+5.  **Status überprüfen:**
+
+    ```bash
+    sudo systemctl status emqx-heartbeat.timer
+    sudo systemctl status emqx-heartbeat.service
+    ```
+
+    Beide sollten als `active` angezeigt werden.
+
+6.  **Logs überprüfen:**
+
+    ```bash
+    journalctl -u emqx-heartbeat.service -f
+    ```
+
+    Hier solltest du sehen, dass das Skript alle 50 Sekunden ausgeführt wird.
+
+#### 10.4. Überprüfung in Uptime Kuma
+
+Nachdem alle Schritte ausgeführt wurden, sollte dein Uptime Kuma Monitor für den EMQX-Cluster auf **"Up"** wechseln und regelmäßig "Heartbeats" empfangen. Im EMQX Dashboard unter "Rule Engine" -\> "Rules" siehst du bei deiner erstellten Regel die Statistiken "Matched" und "Succeeded", die ansteigen sollten.
